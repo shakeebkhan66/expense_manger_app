@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'package:expense_manger_app/db_helper.dart';
 import 'package:flutter/material.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -14,6 +15,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   var note = "Some Expense";
   var type = "Income";
   DateTime selectedData = DateTime.now();
+
+  // TODO Instance of DBHelper Class
+  final DBHelper _dbHelper = DBHelper();
 
   List<String> months = [
     "Jan",
@@ -47,6 +51,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xffe2e7ef),
       appBar: AppBar(
         backgroundColor: Colors.green[300],
         toolbarHeight: 0.0,
@@ -236,7 +241,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 25.0),
             child: MaterialButton(
-              onPressed: () {},
+              onPressed: () async{
+                if(amount != null && note.isNotEmpty){
+                  await _dbHelper.addData(amount!, selectedData, note, type);
+                  Navigator.of(context).pop();
+                }else{
+                  print("All Fields are not provided");
+                }
+              },
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
