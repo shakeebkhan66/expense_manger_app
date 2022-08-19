@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:expense_manger_app/add_transaction_screen.dart';
 import 'package:expense_manger_app/db_helper.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -13,27 +16,43 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // TODO Creating an instance of DBHelper Class
   final DBHelper _dbHelper = DBHelper();
+  DateTime today = DateTime.now();
 
   int totalBalance = 0;
   int totalIncome = 0;
   int totalExpense = 0;
+  List<FlSpot> dataSet = [];
 
-  getTotalBalance(Map entireData){
+  // TODO Plotting Values in Chart Function
+  List<FlSpot> getPlotPoints(Map entireData) {
+    dataSet = [];
+    entireData.forEach((key, value) {
+      if (value['type'] == "Expense" &&
+          (value['date'] as DateTime).month == today.month) {
+        dataSet.add(FlSpot(
+          (value['date'] as DateTime).day.toDouble(),
+          (value['amount'] as int).toDouble(),
+        ));
+      }
+    });
+    return dataSet;
+  }
+
+  // TODO For Getting and Calculating Total Balance
+  getTotalBalance(Map entireData) {
     totalBalance = 0;
     totalIncome = 0;
     totalExpense = 0;
     entireData.forEach((key, value) {
-      if(value['type'] == "Income"){
-        totalBalance += (value['amount'] as  int);
+      if (value['type'] == "Income") {
+        totalBalance += (value['amount'] as int);
         totalIncome += (value['amount'] as int);
-      }else{
+      } else {
         totalBalance -= (value['amount'] as int);
         totalExpense += (value['amount'] as int);
       }
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return const Center(child: Text("No Data Found...!"));
               }
               getTotalBalance(snapshot.data!);
+              getPlotPoints(snapshot.data!);
               return ListView(
                 children: [
                   Padding(
@@ -71,7 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             CircleAvatar(
                               radius: 25,
                               backgroundColor: Colors.green[300],
-                              backgroundImage: const AssetImage("assets/images/own.jpg",),
+                              backgroundImage: const AssetImage(
+                                "assets/images/own.jpg",
+                              ),
                             ),
                             const SizedBox(
                               width: 10.0,
@@ -88,14 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(12.0),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12.0),
-                            color: Colors.white70,
+                            borderRadius: BorderRadius.circular(30.0),
+                            color: Colors.green[300],
                           ),
-                          child: const Icon(
-                            CupertinoIcons.settings_solid,
-                            size: 32.0,
-                            color: Color(0xff3E454C),
-                          ),
+                          child: const Icon(CupertinoIcons.settings_solid,
+                              size: 32.0, color: Colors.white),
                         )
                       ],
                     ),
@@ -104,16 +123,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: MediaQuery.of(context).size.width * 0.9,
                     margin: const EdgeInsets.all(12.0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 15.0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0, vertical: 15.0),
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12.0),
-                          gradient: LinearGradient(
-                              colors: [
-                                Colors.green,
-                                Colors.green.shade300,
-                              ]
-                          )
-                      ),
+                          gradient: LinearGradient(colors: [
+                            Colors.green,
+                            Colors.green.shade300,
+                          ])),
                       child: Column(
                         children: [
                           const Text(
@@ -133,7 +150,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 12.0,),
+                          const SizedBox(
+                            height: 12.0,
+                          ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Row(
@@ -147,19 +166,93 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: Text(
+                      "Expenses",
+                      style: TextStyle(
+                          fontSize: 32.0,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  dataSet.length < 2
+                      ? Container(
+                          height: 300,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0, vertical: 40.0),
+                          margin: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10.0),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.grey.withOpacity(0.4),
+                                    blurRadius: 6.0,
+                                    spreadRadius: 5.0,
+                                    offset: const Offset(0, 4))
+                              ]),
+                          child: const Text(
+                            "Not Enough Values to Render Chart",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20.0,
+                                color: Colors.black87),
+                          ))
+                      : Container(
+                          height: 300,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0, vertical: 40.0),
+                          margin: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10.0),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.grey.withOpacity(0.4),
+                                    blurRadius: 6.0,
+                                    spreadRadius: 5.0,
+                                    offset: const Offset(0, 4))
+                              ]),
+                          child: LineChart(LineChartData(
+                              borderData: FlBorderData(show: false),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: getPlotPoints(snapshot.data!),
+                                  isCurved: false,
+                                  color: Colors.green[600],
+                                  barWidth: 2.5,
+                                ),
+                              ])),
+                        ),
+                  const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: Text(
+                      "Recent Expenses",
+                      style: TextStyle(
+                          fontSize: 32.0,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      Map dataAtIndex = snapshot.data![index];
+                      if (dataAtIndex['type'] == "Income") {
+                        return incomeTile(
+                            dataAtIndex['amount'], dataAtIndex['note']);
+                      } else {
+                        return expenseTile(
+                            dataAtIndex['amount'], dataAtIndex['note']);
+                      }
+                    },
                   )
                 ],
               );
-              // return ListView(
-              //   children: [
-              //     Row(
-              //       children: [
-              //         Row(),
-              //         const Icon(CupertinoIcons.settings_solid, color: Colors.green,)
-              //       ],
-              //     )
-              //   ],
-              // );
             } else {
               return const Center(
                 child: Text("Unexpected Error...!"),
@@ -174,10 +267,11 @@ class _HomeScreenState extends State<HomeScreen> {
         splashColor: Colors.white38,
         focusColor: Colors.black87,
         onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => AddTransactionScreen()
-              )
-          ).whenComplete(() {
+          Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => AddTransactionScreen()))
+              .whenComplete(() {
             setState(() {});
           });
         },
@@ -191,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // TODO Card Income
-  Widget cardIncome(String value){
+  Widget cardIncome(String value) {
     return Row(
       children: [
         Container(
@@ -201,7 +295,10 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.0),
           ),
-          child: const Icon(CupertinoIcons.arrow_down_circle, color: Colors.green,),
+          child: const Icon(
+            CupertinoIcons.arrow_down_circle,
+            color: Colors.green,
+          ),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // TODO Card Expense
-  Widget cardExpense(String value){
+  Widget cardExpense(String value) {
     return Row(
       children: [
         Container(
@@ -238,7 +335,10 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.0),
           ),
-          child: const Icon(CupertinoIcons.arrow_up_circle, color: Colors.red,),
+          child: const Icon(
+            CupertinoIcons.arrow_up_circle,
+            color: Colors.red,
+          ),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,6 +361,94 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         )
       ],
+    );
+  }
+
+  // TODO Expense Tile
+  Widget expenseTile(int value, String note) {
+    return Container(
+      margin: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(18.0),
+      decoration: BoxDecoration(
+          color: Colors.green[100], borderRadius: BorderRadius.circular(8.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.arrow_circle_up_outlined,
+                    size: 27.0,
+                    color: Colors.red[700],
+                  ),
+                  const SizedBox(
+                    width: 4.0,
+                  ),
+                  const Text(
+                    "Expense",
+                    style: TextStyle(
+                      fontSize: 20.0,
+                    ),
+                  )
+                ],
+              ),
+              Text(
+                "- $value",
+                style: const TextStyle(
+                    fontSize: 24.0, fontWeight: FontWeight.w700),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  // TODO Income Tile
+  Widget incomeTile(int value, String note) {
+    return Container(
+      margin: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(18.0),
+      decoration: BoxDecoration(
+          color: Colors.green[100], borderRadius: BorderRadius.circular(8.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.arrow_circle_down_outlined,
+                    size: 27.0,
+                    color: Colors.green[700],
+                  ),
+                  const SizedBox(
+                    width: 4.0,
+                  ),
+                  const Text(
+                    "Income",
+                    style: TextStyle(
+                      fontSize: 20.0,
+                    ),
+                  )
+                ],
+              ),
+              Text(
+                "+ $value",
+                style: const TextStyle(
+                    fontSize: 24.0, fontWeight: FontWeight.w700),
+              )
+            ],
+          )
+        ],
+      ),
     );
   }
 }
